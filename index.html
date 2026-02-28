@@ -1,0 +1,2218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Offline Escape Room (9 Rooms × 6 Tasks)</title>
+  <!--
+  OFFLINE ESCAPE ROOM – QUICK USE
+  1) Prepare a .txt game file (example format shown inside the app: click “Show file format help”).
+  2) Open this HTML in a modern browser (works offline).
+  3) Load the TXT (Upload OR Paste), enter Player Name, optional Teacher Code (1964), then Start.
+  4) Teacher Mode enables: restart + “Show Answer” review buttons.
+  -->
+  <style>
+    :root{
+      --bg:#0a1f3f;
+      --panel:#0b2a57;
+      --panel2:#091f41;
+      --text:#eaf3ff;
+      --muted:#b7cbe6;
+
+      --accent:#7ec8ff;
+      --accent2:#3b82f6;
+      --warn:#ffd166;
+
+      --good:#37d67a;
+      --bad:#ff4d6d;
+
+      --line:rgba(234,243,255,.14);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --radius2:22px;
+      --btnpad: 12px 14px;
+
+      --font: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+      /* user-selectable */
+      --fontUser: var(--font);
+
+      --sky1:#bfe6ff;
+      --sky2:#7ec8ff;
+      --sky3:#3b82f6;
+      --sky4:#173d80;
+      --deep:#061a3d;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--fontUser);
+      background:
+        radial-gradient(900px 650px at 12% 0%, rgba(191,230,255,.95) 0%, rgba(126,200,255,.92) 28%, rgba(59,130,246,.85) 55%, rgba(23,61,128,.92) 78%, rgba(6,26,61,1) 100%),
+        linear-gradient(180deg, rgba(191,230,255,.55), rgba(6,26,61,1));
+      color:var(--text);
+      min-height:100vh;
+    }
+    a{color:var(--accent)}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+
+    .topbar{
+      display:flex;gap:12px;align-items:center;justify-content:space-between;
+      padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius2);
+      background:
+        linear-gradient(90deg,
+          rgba(126,200,255,.40) 0%,
+          rgba(255,209,102,.26) 35%,
+          rgba(55,214,122,.20) 70%,
+          rgba(126,200,255,.22) 100%),
+        linear-gradient(180deg, rgba(234,243,255,.10), rgba(234,243,255,.04));
+      box-shadow:var(--shadow);
+      position:sticky;top:10px;z-index:5;
+      backdrop-filter: blur(8px);
+    }
+    .brand{
+      display:flex;gap:10px;align-items:center;
+      font-weight:800;letter-spacing:.2px;
+    }
+    .badge{
+      font-size:12px;padding:4px 10px;border-radius:999px;
+      border:1px solid rgba(255,209,102,.55);
+      color:rgba(0,0,0,.85);
+      background:linear-gradient(180deg, rgba(255,209,102,.98), rgba(255,209,102,.62));
+      white-space:nowrap;
+    }
+    .stats{
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;
+      text-align:right;
+    }
+    .stat{
+      padding:6px 10px;border:1px solid rgba(126,200,255,.34);border-radius:999px;
+      background:rgba(3,8,18,.18);
+      font-size:13px;color:var(--muted);
+    }
+    .stat b{color:var(--text);font-weight:800}
+
+    .grid{
+      display:grid;grid-template-columns: 1.1fr .9fr;
+      gap:16px;margin-top:16px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+      .topbar{position:static}
+    }
+
+    .card{
+      border:1px solid rgba(126,200,255,.22);
+      border-radius:var(--radius2);
+      background:linear-gradient(180deg, rgba(11,42,87,.62), rgba(9,31,65,.50));
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:14px 16px;border-bottom:1px solid rgba(126,200,255,.22);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+      background:linear-gradient(180deg, rgba(126,200,255,.08), rgba(0,0,0,0));
+    }
+    .card .hd h2{
+      margin:0;font-size:16px;letter-spacing:.2px;
+    }
+    .card .bd{padding:16px}
+
+    .muted{color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .row > *{flex:1 1 auto}
+
+    label{
+      display:block;font-size:12px;color:rgba(234,243,255,.80);margin-bottom:6px;
+      letter-spacing:.2px;
+    }
+
+    input[type="text"], input[type="password"], textarea, select{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(126,200,255,.28);
+      background:rgba(3,8,18,.28);
+      color:var(--text);
+      outline:none;
+      font-family:var(--fontUser);
+    }
+    input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus{
+      border-color: rgba(255,209,102,.65);
+      box-shadow: 0 0 0 3px rgba(255,209,102,.12);
+    }
+
+    textarea{min-height:170px;font-family:var(--mono);font-size:12px;line-height:1.35}
+    input::placeholder, textarea::placeholder{color:rgba(234,243,255,.45)}
+
+    .btn{
+      appearance:none;border:none;cursor:pointer;
+      padding:var(--btnpad);
+      border-radius:14px;
+      background:linear-gradient(180deg, rgba(126,200,255,.22), rgba(59,130,246,.10));
+      color:var(--text);
+      font-weight:750;
+      border:1px solid rgba(126,200,255,.34);
+      transition: transform .05s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease, filter .15s ease;
+      user-select:none;
+      font-family:var(--fontUser);
+    }
+    .btn:hover{
+      filter:brightness(1.06);
+      box-shadow: 0 10px 22px rgba(0,0,0,.16);
+    }
+    .btn:active{transform:translateY(1px)}
+
+    .btn.primary{
+      background:linear-gradient(180deg, rgba(126,200,255,.92), rgba(59,130,246,.55));
+      border-color:rgba(126,200,255,.75);
+      color:rgba(0,0,0,.88);
+      font-weight:850;
+      box-shadow: 0 12px 26px rgba(59,130,246,.18);
+    }
+    .btn.good{
+      background:linear-gradient(180deg, rgba(55,214,122,.82), rgba(55,214,122,.38));
+      border-color:rgba(55,214,122,.55);
+      color:rgba(0,0,0,.88);
+      font-weight:850;
+      box-shadow: 0 12px 26px rgba(55,214,122,.14);
+    }
+    .btn.bad{
+      background:linear-gradient(180deg, rgba(255,77,109,.32), rgba(255,77,109,.10));
+      border-color:rgba(255,77,109,.35);
+    }
+    .btn.ghost{
+      background:rgba(0,0,0,.10);
+      border-color:rgba(126,200,255,.28);
+    }
+    .btn.warn{
+      background:linear-gradient(180deg, rgba(255,209,102,.98), rgba(255,209,102,.55));
+      border-color:rgba(255,209,102,.70);
+      color:rgba(0,0,0,.88);
+      font-weight:900;
+      box-shadow: 0 12px 26px rgba(255,209,102,.14);
+    }
+    .btn.small{padding:9px 10px;border-radius:12px;font-size:13px}
+
+    .sep{height:1px;background:rgba(126,200,255,.20);margin:14px 0}
+
+    .pill{
+      display:inline-flex;gap:8px;align-items:center;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(126,200,255,.25);
+      background:rgba(3,8,18,.18);
+      font-size:12px;color:var(--muted);
+    }
+    .pill b{color:var(--text)}
+
+    .screen{display:none}
+    .screen.active{display:block}
+
+    .taskHeader{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .taskHeader h3{margin:0;font-size:15px}
+    .taskHeader .meta{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+    .qbox{
+      padding:14px;border:1px solid rgba(126,200,255,.22);border-radius:18px;
+      background:rgba(3,8,18,.22);
+    }
+    .qbox .qtext{white-space:pre-wrap;line-height:1.35}
+
+    .choices{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+    .choice{
+      display:flex;gap:10px;align-items:flex-start;
+      padding:10px 12px;border-radius:14px;border:1px solid rgba(126,200,255,.22);
+      background:rgba(3,8,18,.18);
+      cursor:pointer;
+      font-family:var(--fontUser);
+    }
+    .choice input{margin-top:2px}
+    .choice:hover{background:rgba(126,200,255,.12)}
+
+    .feedback{
+      margin-top:10px;padding:10px 12px;border-radius:14px;border:1px solid rgba(126,200,255,.22);
+      background:rgba(3,8,18,.20);
+      color:var(--muted);
+      white-space:pre-wrap;
+    }
+    .feedback.good{border-color:rgba(55,214,122,.35);background:rgba(55,214,122,.10);color:rgba(234,243,255,.95)}
+    .feedback.bad{border-color:rgba(255,77,109,.35);background:rgba(255,77,109,.10);color:rgba(234,243,255,.95)}
+
+    .hintBox{
+      margin-top:10px;padding:10px 12px;border-radius:14px;border:1px dashed rgba(255,209,102,.70);
+      background:rgba(255,209,102,.14);
+      color:rgba(234,243,255,.98);
+      white-space:pre-wrap;
+      display:none;
+    }
+    .hintBox.show{display:block}
+
+    .twoCol{
+      display:grid;grid-template-columns: 1fr 1fr;gap:10px;
+    }
+    @media (max-width: 700px){
+      .twoCol{grid-template-columns:1fr}
+    }
+
+    .roomNav{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+      margin-top:12px;
+    }
+
+    .progress{
+      height:10px;border-radius:999px;background:rgba(234,243,255,.12);overflow:hidden;border:1px solid rgba(126,200,255,.22)
+    }
+    .progress > div{
+      height:100%;width:0%;
+      background:linear-gradient(90deg, rgba(126,200,255,.95), rgba(255,209,102,.92), rgba(55,214,122,.90));
+      border-radius:999px;
+      transition: width .25s ease;
+    }
+
+    .miniHelp{
+      font-family:var(--mono);font-size:12px;line-height:1.35;
+      padding:12px;border-radius:16px;border:1px solid rgba(126,200,255,.22);
+      background:rgba(3,8,18,.20);
+      white-space:pre-wrap;
+      max-height:280px;overflow:auto;
+    }
+
+    .finalBig{
+      font-size:18px;font-weight:850;margin:0 0 6px 0;
+    }
+
+    canvas#confetti{
+      position:fixed;inset:0;
+      pointer-events:none;
+      z-index:9999;
+      display:none;
+    }
+
+    .certWrap{
+      margin-top:12px;
+      border:1px solid rgba(126,200,255,.22);
+      border-radius:18px;
+      background:rgba(3,8,18,.18);
+      padding:12px;
+    }
+    .certPreview{
+      width:100%;
+      max-width:900px;
+      border-radius:14px;
+      display:block;
+      border:1px solid rgba(255,209,102,.30);
+      box-shadow: 0 12px 26px rgba(0,0,0,.22);
+    }
+
+    .sourceBox{
+      border:1px solid rgba(126,200,255,.22);
+      border-radius:18px;
+      background:rgba(3,8,18,.18);
+      padding:12px;
+      max-height:520px;
+      overflow:auto;
+      white-space:pre-wrap;
+      line-height:1.35;
+    }
+  </style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <div style="width:34px;height:34px;border-radius:12px;border:1px solid rgba(255,209,102,.55);background:linear-gradient(180deg, rgba(255,209,102,.98), rgba(255,209,102,.55));display:grid;place-items:center;font-weight:900;color:rgba(0,0,0,.85);">ER</div>
+      <div>
+        Escape Room
+        <div class="muted" style="font-weight:650;font-size:12px;margin-top:1px;">9 rooms × 6 tasks • offline • teacher review</div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">Room: <b id="uiRoom">–</b>/9</div>
+      <div class="stat">Task: <b id="uiTask">–</b>/6</div>
+      <div class="stat">Time: <b id="uiTime">00:00</b></div>
+      <div class="stat">Hints: <b id="uiHints">0</b></div>
+      <div class="stat">Attempts: <b id="uiAttempts">0</b></div>
+      <div class="badge" id="uiMode">MODE: —</div>
+    </div>
+  </div>
+
+  <section id="screenStart" class="screen active">
+    <div class="grid">
+      <div class="card">
+        <div class="hd">
+          <h2>Load game file</h2>
+          <span class="pill"><b>TXT/JSON</b> only</span>
+        </div>
+        <div class="bd">
+          <div class="twoCol">
+            <div>
+              <label for="fileInput">Upload .txt or .json file</label>
+              <input id="fileInput" type="file" accept=".txt,.json,application/json,text/plain" />
+            </div>
+            <div>
+              <label for="pasteBox">OR paste file content</label>
+              <textarea id="pasteBox" placeholder=""></textarea>
+            </div>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="row">
+            <div>
+              <label for="playerName">Player name (required)</label>
+              <input id="playerName" type="text" placeholder="e.g. Team Falcon" />
+            </div>
+            <div>
+              <label for="teacherCode">Teacher code (optional)</label>
+              <input id="teacherCode" type="password" placeholder="" />
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <div>
+              <label for="voiceSelect">TTS voice</label>
+              <select id="voiceSelect"></select>
+            </div>
+            <div style="flex:0 0 auto;">
+              <label style="visibility:hidden;">&nbsp;</label>
+              <button class="btn warn" id="btnTestVoice">Test voice</button>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <div>
+              <label for="fontSelect">Font</label>
+              <select id="fontSelect">
+                <option value="sans">Sans (default)</option>
+                <option value="serif">Serif</option>
+              </select>
+            </div>
+            <div style="flex:0 0 auto;"></div>
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <button class="btn ghost" id="btnHelp">Show file format help</button>
+            <button class="btn primary" id="btnLoad">Load & Validate</button>
+            <button class="btn good" id="btnStart" disabled>Start Mission</button>
+          </div>
+
+          <div id="startMsg" class="feedback" style="margin-top:12px;"></div>
+
+          <div id="helpBox" class="miniHelp" style="margin-top:12px;display:none;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <h2>Source text (read before starting)</h2>
+          <div class="row" style="gap:8px;flex:0 0 auto;">
+            <button class="btn small warn" id="btnSpeakSource" disabled>🔊 Read source</button>
+
+            <select id="sourceTtsSpeed" class="btn small" style="width:auto;min-width:96px;padding:9px 10px;">
+              <option value="0.5">0.5×</option>
+              <option value="0.75">0.75×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.25">1.25×</option>
+            </select>
+
+            <button class="btn small ghost" id="btnStopSpeak2">Stop</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div id="sourcePreview" class="sourceBox muted">Upload or paste a game file that contains a SOURCE section.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screenGame" class="screen">
+    <div class="grid">
+      <div class="card">
+        <div class="hd">
+          <h2 id="roomTitle">Room</h2>
+
+          <div class="row" style="gap:8px;flex:0 0 auto;flex-wrap:nowrap;">
+            <button class="btn small warn" id="btnTeacherJumpEnd" style="display:none;padding:8px 9px;font-size:12px;">Jump to End (Teacher)</button>
+            <button class="btn small warn" id="btnTeacherNextRoom" style="display:none;padding:8px 9px;font-size:12px;">Jump to Next Room (Teacher)</button>
+            <button class="btn small ghost" id="btnTeacherReturn" style="display:none;padding:8px 9px;font-size:12px;">Return to Start (Teacher)</button>
+            <button class="btn small ghost" id="btnBackToStart">Exit to Start</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="progress" aria-label="Room progress">
+            <div id="roomProgressBar"></div>
+          </div>
+
+          <div style="margin-top:14px" class="taskHeader">
+            <h3 id="taskTitle">Task</h3>
+            <div class="meta">
+              <span class="pill">Type: <b id="taskType">—</b></span>
+              <span class="pill">Solved: <b id="taskSolved">0</b>/6</span>
+            </div>
+          </div>
+
+          <div class="qbox">
+            <div id="qText" class="qtext"></div>
+
+            <div id="ttsRow" class="row" style="margin-top:10px;display:none;">
+              <button class="btn small warn" id="btnSpeakQ">🔊 Read question</button>
+              <button class="btn small ghost" id="btnStopSpeak">Stop</button>
+            </div>
+
+            <div id="mcqBox" style="display:none;">
+              <div class="choices" id="mcqChoices"></div>
+            </div>
+
+            <div id="inputBox" style="display:none;margin-top:10px;">
+              <label id="inputLabel" for="answerInput">Your answer</label>
+              <input id="answerInput" type="text" autocomplete="off" placeholder="" />
+            </div>
+
+            <div class="row" style="margin-top:12px;">
+              <button class="btn primary" id="btnCheck">Check</button>
+              <button class="btn" id="btnHint" style="display:none;">Hint</button>
+              <button class="btn ghost" id="btnShowAnswer" style="display:none;">Show answer (Teacher)</button>
+              <button class="btn good" id="btnNextTask" style="display:none;">Next task</button>
+            </div>
+
+            <div id="answerReveal" class="hintBox" style="border-style:solid;border-color:rgba(126,200,255,.55);background:rgba(126,200,255,.14);display:none;"></div>
+
+            <div id="hintBoxGame" class="hintBox"></div>
+            <div id="fb" class="feedback"></div>
+          </div>
+
+          <div class="roomNav">
+            <div class="muted" id="navNote"></div>
+            <button class="btn good" id="btnNextRoom" style="display:none;">Enter next room</button>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <h2>Room overview</h2>
+          <span class="pill" id="playerPill">Player: <b>—</b></span>
+        </div>
+        <div class="bd">
+          <div id="roomChecklist"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screenFinal" class="screen">
+    <div class="card">
+      <div class="hd">
+        <h2>Mission complete</h2>
+        <span class="pill"><b>Results</b></span>
+      </div>
+      <div class="bd">
+        <p class="finalBig" id="finalTitle">Well done!</p>
+
+        <div class="qbox">
+          <div class="qtext" id="finalStats"></div>
+        </div>
+
+        <div class="certWrap">
+          <div class="row" style="align-items:center;">
+            <div class="pill" style="flex:0 0 auto;">Certificate: <b>ready</b></div>
+            <div class="muted" style="font-size:12px;flex:1 1 auto;">Download and send to your teacher.</div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <img id="certPreview" class="certPreview" alt="Certificate preview" />
+            <canvas id="certCanvas" style="display:none;"></canvas>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <button class="btn warn" id="btnDownloadPNG">Download Certificate (PNG)</button>
+            <button class="btn warn" id="btnDownloadJPG">Download Certificate (JPG)</button>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+        <div class="row">
+          <button class="btn primary" id="btnRestartFromFinal">Restart</button>
+          <button class="btn ghost" id="btnBackToStart2">Back to Start</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+
+// iPad/iOS helpers (for in-app viewers and download/share behavior)
+const __UA = navigator.userAgent || "";
+const __isIOS = /iPad|iPhone|iPod/.test(__UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const __isSafari = __isIOS && /Safari/i.test(__UA) && !/CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo/i.test(__UA);
+// Many apps embed a WKWebView that behaves differently than Safari (file upload/download limitations)
+const __isInAppWebView = __isIOS && !__isSafari;
+
+  const $ = (sel, el=document) => el.querySelector(sel);
+
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+  function normSpaces(s){ return (s ?? "").toString().trim().replace(/\s+/g," "); }
+  function normForCheck(s){
+    const t = (s ?? "").toString()
+      .normalize("NFKC")
+      .replace(/[\u2018\u2019\u02BC\u2032\u00B4\u201B]/g, "'"); // unify apostrophes
+    return normSpaces(t).toLowerCase();
+  }
+  function escapeHtml(s){
+    return (s ?? "").toString()
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function fmtTime(ms){
+    const total = Math.max(0, Math.floor(ms/1000));
+    const m = Math.floor(total/60);
+    const s = total % 60;
+    return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  }
+  function countWords(s){
+    const t = normSpaces(s);
+    if(!t) return 0;
+    return t.split(" ").length;
+  }
+  function chooseMaskPattern(answer, revealRatio){
+    const a = answer.toString();
+    const letters = [];
+    for(let i=0;i<a.length;i++){
+      const ch = a[i];
+      if(/[A-Za-zÀ-ž0-9]/.test(ch)) letters.push(i);
+    }
+    const total = letters.length;
+    if(total === 0) return a;
+
+    const revealCount = clamp(Math.round(total * revealRatio), 0, total);
+    const revealSet = new Set();
+    if(revealCount > 0){
+      for(let k=0;k<revealCount;k++){
+        const idx = Math.floor((k*(total-1)) / Math.max(1,(revealCount-1)));
+        revealSet.add(letters[idx]);
+      }
+    }
+
+    if(revealRatio >= 0.5){
+      let inWord = false;
+      for(let i=0;i<a.length;i++){
+        const ch=a[i];
+        if(/[A-Za-zÀ-ž0-9]/.test(ch)){
+          if(!inWord){ revealSet.add(i); inWord=true; }
+        } else {
+          inWord=false;
+        }
+      }
+    }
+
+    let out="";
+    for(let i=0;i<a.length;i++){
+      const ch=a[i];
+      if(!/[A-Za-zÀ-ž0-9]/.test(ch)) out += ch;
+      else out += (revealSet.has(i) ? ch : "•");
+    }
+    return out;
+  }
+
+  let audioCtx = null;
+
+  function beepSuccess(){
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = audioCtx.currentTime;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type="sine";
+      o.frequency.setValueAtTime(523.25, t0);
+      o.frequency.exponentialRampToValueAtTime(783.99, t0+0.12);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.18, t0+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+0.25);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0); o.stop(t0+0.28);
+    }catch(e){}
+  }
+
+  function soundCorrect(){
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = audioCtx.currentTime;
+
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+
+      o.type = "sine";
+      o.frequency.setValueAtTime(523.25, t0);
+      o.frequency.exponentialRampToValueAtTime(880, t0 + 0.18);
+
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.22, t0 + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+
+      o.connect(g);
+      g.connect(audioCtx.destination);
+
+      o.start(t0);
+      o.stop(t0 + 0.30);
+    }catch(e){}
+  }
+
+  function soundWrong(){
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = audioCtx.currentTime;
+
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+
+      o.type = "square";
+      o.frequency.setValueAtTime(180, t0);
+
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.20);
+
+      o.connect(g);
+      g.connect(audioCtx.destination);
+
+      o.start(t0);
+      o.stop(t0 + 0.22);
+    }catch(e){}
+  }
+
+  const confettiCanvas = $("#confetti");
+  const cctx = confettiCanvas.getContext("2d");
+  let confettiTimer = null;
+
+  function confettiBurst(durationMs=1400){
+    const W = confettiCanvas.width = window.innerWidth;
+    const H = confettiCanvas.height = window.innerHeight;
+    confettiCanvas.style.display = "block";
+
+    const colors = ["#7ec8ff","#ffd166","#3b82f6","#60a5fa","#fbbf24","#22c55e","#ff4d6d"];
+    const pieces = [];
+    const N = Math.min(220, Math.floor((W*H)/9000));
+    for(let i=0;i<N;i++){
+      pieces.push({
+        x: Math.random()*W,
+        y: -20 - Math.random()*H*0.3,
+        r: 4 + Math.random()*6,
+        vx: (-1 + Math.random()*2) * (1.5 + Math.random()*2.5),
+        vy: 2 + Math.random()*4.5,
+        rot: Math.random()*Math.PI,
+        vrot: (-1+Math.random()*2)*0.14,
+        color: colors[Math.floor(Math.random()*colors.length)],
+        shape: Math.random() < .65 ? "rect" : "circle"
+      });
+    }
+
+    const tStartLocal = performance.now();
+    function tick(tNow){
+      cctx.clearRect(0,0,W,H);
+      for(const p of pieces){
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.03;
+        p.vx *= 0.995;
+        p.rot += p.vrot;
+
+        cctx.save();
+        cctx.translate(p.x, p.y);
+        cctx.rotate(p.rot);
+        cctx.fillStyle = p.color;
+        if(p.shape==="rect"){
+          cctx.fillRect(-p.r, -p.r*0.6, p.r*2, p.r*1.2);
+        }else{
+          cctx.beginPath();
+          cctx.arc(0,0,p.r*0.7,0,Math.PI*2);
+          cctx.fill();
+        }
+        cctx.restore();
+      }
+
+      if(tNow - tStartLocal < durationMs){
+        confettiTimer = requestAnimationFrame(tick);
+      } else {
+        confettiCanvas.style.display = "none";
+        cctx.clearRect(0,0,W,H);
+        if(confettiTimer) cancelAnimationFrame(confettiTimer);
+        confettiTimer = null;
+      }
+    }
+    if(confettiTimer) cancelAnimationFrame(confettiTimer);
+    confettiTimer = requestAnimationFrame(tick);
+  }
+
+  window.addEventListener("resize", () => {
+    if(confettiCanvas.style.display==="block"){
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+    }
+  });
+
+  const TASK_ORDER = ["MCQ","OPEN","TF","GAP","VOCAB","TRANSFORM"];
+  let game = null;
+  let teacherMode = false;
+
+  let uploadedFileText = "";
+  let preStartSourceText = "";
+
+  const voiceSelect = $("#voiceSelect");
+  let voiceList = [];
+  let chosenVoiceURI = "";
+
+  function loadVoicesPreserveSelection(){
+    try{
+      const keepURI =
+        (game && game.voiceURI) ||
+        chosenVoiceURI ||
+        (voiceSelect && voiceSelect.value) ||
+        "";
+
+      voiceList = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+      voiceSelect.innerHTML = "";
+
+      if(!voiceList || !voiceList.length){
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Loading voices…";
+        voiceSelect.appendChild(opt);
+        return;
+      }
+
+      for(const v of voiceList){
+        const opt = document.createElement("option");
+        opt.value = v.voiceURI;
+        opt.textContent = `${v.name} (${v.lang})`;
+        voiceSelect.appendChild(opt);
+      }
+
+      const stillThere = keepURI && voiceList.some(v => v.voiceURI === keepURI);
+      if(stillThere){
+        voiceSelect.value = keepURI;
+        chosenVoiceURI = keepURI;
+      } else {
+        const preferred =
+          voiceList.find(v => (v.lang||"").toLowerCase().startsWith("en")) ||
+          voiceList[0];
+
+        voiceSelect.value = preferred ? preferred.voiceURI : "";
+        chosenVoiceURI = voiceSelect.value || "";
+      }
+
+      if(game) game.voiceURI = chosenVoiceURI;
+
+    }catch(e){}
+  }
+
+  function forceVoiceRefresh(){
+    loadVoicesPreserveSelection();
+    setTimeout(loadVoicesPreserveSelection, 200);
+    setTimeout(loadVoicesPreserveSelection, 700);
+    setTimeout(loadVoicesPreserveSelection, 1200);
+  }
+
+  voiceSelect.addEventListener("change", () => {
+    chosenVoiceURI = voiceSelect.value || "";
+    if(game) game.voiceURI = chosenVoiceURI;
+  });
+
+  if(window.speechSynthesis){
+    speechSynthesis.onvoiceschanged = () => loadVoicesPreserveSelection();
+  }
+  forceVoiceRefresh();
+
+  function getSelectedVoice(){
+    const uri = (game && game.voiceURI) ? game.voiceURI : chosenVoiceURI;
+    return voiceList.find(v => v.voiceURI === uri) || null;
+  }
+
+  function stopSpeak(){
+    try{
+      if(window.speechSynthesis) speechSynthesis.cancel();
+    }catch(e){}
+  }
+
+  function speak(text, rateOverride){
+    try{
+      if(!window.speechSynthesis) return;
+      const t = normSpaces(text);
+      if(!t) return;
+      stopSpeak();
+      const u = new SpeechSynthesisUtterance(t);
+      const v = getSelectedVoice();
+      if(v) u.voice = v;
+      if(typeof rateOverride === "number" && isFinite(rateOverride)) u.rate = rateOverride;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  const fontSelect = $("#fontSelect");
+  function applyFontChoice(){
+    const v = (fontSelect && fontSelect.value) ? fontSelect.value : "sans";
+    if(v === "serif"){
+      document.documentElement.style.setProperty("--fontUser", 'Georgia, "Times New Roman", Times, serif');
+    }else{
+      document.documentElement.style.setProperty("--fontUser", 'var(--font)');
+    }
+  }
+  fontSelect.addEventListener("change", applyFontChoice);
+  applyFontChoice();
+
+  const sourcePreview = $("#sourcePreview");
+  const btnSpeakSource = $("#btnSpeakSource");
+  const sourceTtsSpeed = $("#sourceTtsSpeed");
+  $("#btnStopSpeak2").addEventListener("click", () => stopSpeak());
+  btnSpeakSource.addEventListener("click", () => {
+    if(!preStartSourceText) return;
+    const rate = sourceTtsSpeed ? parseFloat(sourceTtsSpeed.value) : 1;
+    speak(preStartSourceText, (isFinite(rate) ? rate : 1));
+  });
+
+  function extractSourceText(raw){
+    const text = raw.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+    const upper = text.toUpperCase();
+
+    let a = upper.indexOf("[SOURCE]");
+    if(a !== -1){
+      let b = upper.indexOf("[/SOURCE]", a + 8);
+      if(b !== -1){
+        return text.slice(a + 8, b).trim();
+      }
+    }
+
+    a = upper.indexOf("SOURCE_START");
+    if(a !== -1){
+      let b = upper.indexOf("SOURCE_END", a + 12);
+      if(b !== -1){
+        return text.slice(a + 12, b).trim();
+      }
+    }
+
+    const lines = text.split("\n");
+    let startIdx = -1;
+    for(let i=0;i<lines.length;i++){
+      if(/^SOURCE::/i.test(lines[i].trim())){
+        startIdx = i;
+        break;
+      }
+    }
+    if(startIdx !== -1){
+      const out = [];
+      out.push(lines[startIdx].replace(/^SOURCE::/i,"").trim());
+      for(let i=startIdx+1;i<lines.length;i++){
+        const t = lines[i].trim();
+        if(/^\[?\s*ROOM\s+\d+\s*\]?$/i.test(t)) break;
+        if(/^#ESCAPE_ROOM_V1/i.test(t)) continue;
+        out.push(lines[i]);
+      }
+      return out.join("\n").trim();
+    }
+
+    return "";
+  }
+
+  function tryParseJSON(raw){
+    const t = (raw ?? "").toString().trim();
+    if(!t) return null;
+    if(t[0] !== "{") return null;
+    try{
+      const obj = JSON.parse(t);
+      if(obj && typeof obj === "object") return obj;
+    }catch(e){}
+    return null;
+  }
+
+  function updateSourcePreviewFromRaw(raw){
+    const obj = tryParseJSON(raw);
+    if(obj && typeof obj.source_text === "string"){
+      preStartSourceText = obj.source_text.trim();
+    } else {
+      preStartSourceText = extractSourceText(raw) || "";
+    }
+
+    if(preStartSourceText){
+      sourcePreview.classList.remove("muted");
+      sourcePreview.textContent = preStartSourceText;
+      btnSpeakSource.disabled = false;
+    }else{
+      sourcePreview.classList.add("muted");
+      sourcePreview.textContent = "No SOURCE section found in this file.";
+      btnSpeakSource.disabled = true;
+    }
+  }
+
+  const ui = {
+    uiRoom: $("#uiRoom"),
+    uiTask: $("#uiTask"),
+    uiTime: $("#uiTime"),
+    uiHints: $("#uiHints"),
+    uiAttempts: $("#uiAttempts"),
+    uiMode: $("#uiMode"),
+    screenStart: $("#screenStart"),
+    screenGame: $("#screenGame"),
+    screenFinal: $("#screenFinal"),
+
+    startMsg: $("#startMsg"),
+    helpBox: $("#helpBox"),
+
+    roomTitle: $("#roomTitle"),
+    taskTitle: $("#taskTitle"),
+    taskType: $("#taskType"),
+    taskSolved: $("#taskSolved"),
+    qText: $("#qText"),
+
+    ttsRow: $("#ttsRow"),
+    btnSpeakQ: $("#btnSpeakQ"),
+    btnStopSpeak: $("#btnStopSpeak"),
+
+    mcqBox: $("#mcqBox"),
+    mcqChoices: $("#mcqChoices"),
+    inputBox: $("#inputBox"),
+    inputLabel: $("#inputLabel"),
+    answerInput: $("#answerInput"),
+
+    fb: $("#fb"),
+    hintBoxGame: $("#hintBoxGame"),
+    answerReveal: $("#answerReveal"),
+
+    btnCheck: $("#btnCheck"),
+    btnHint: $("#btnHint"),
+    btnShowAnswer: $("#btnShowAnswer"),
+    btnNextTask: $("#btnNextTask"),
+    btnNextRoom: $("#btnNextRoom"),
+    btnBackToStart: $("#btnBackToStart"),
+
+    btnTeacherJumpEnd: $("#btnTeacherJumpEnd"),
+    btnTeacherNextRoom: $("#btnTeacherNextRoom"),
+    btnTeacherReturn: $("#btnTeacherReturn"),
+
+    roomProgressBar: $("#roomProgressBar"),
+    roomChecklist: $("#roomChecklist"),
+    playerPill: $("#playerPill"),
+    navNote: $("#navNote"),
+
+    finalTitle: $("#finalTitle"),
+    finalStats: $("#finalStats"),
+    btnRestartFromFinal: $("#btnRestartFromFinal"),
+    btnBackToStart2: $("#btnBackToStart2"),
+
+    certCanvas: $("#certCanvas"),
+    certPreview: $("#certPreview"),
+    btnDownloadPNG: $("#btnDownloadPNG"),
+    btnDownloadJPG: $("#btnDownloadJPG"),
+  };
+
+// iPad note: if opened inside an in-app viewer, some browser features can be restricted.
+// The game itself will still run, but file upload / downloads may require opening in Safari.
+try{
+  if(__isInAppWebView){
+    ui.startMsg.className = "feedback bad";
+    ui.startMsg.textContent =
+      "iPad note: If this file is opened inside an app viewer (e.g., Teams/OneDrive preview), iOS may block file upload/download. " +
+      "For full functionality, use Share → Open in Safari.";
+  }
+}catch(e){}
+
+
+  ui.btnSpeakQ.addEventListener("click", () => {
+    speak(ui.qText.textContent || "");
+  });
+  ui.btnStopSpeak.addEventListener("click", () => stopSpeak());
+
+  $("#btnTestVoice").addEventListener("click", () => {
+    loadVoicesPreserveSelection();
+    speak("Voice test. The escape room is ready.");
+  });
+
+  function setScreen(which){
+    for(const s of [ui.screenStart, ui.screenGame, ui.screenFinal]) s.classList.remove("active");
+    which.classList.add("active");
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  let tStart = 0;
+  let tInterval = null;
+  function startTimer(){
+    tStart = performance.now();
+    if(tInterval) clearInterval(tInterval);
+    tInterval = setInterval(() => {
+      if(!game) return;
+      const ms = (performance.now() - tStart) + (game.timeOffsetMs || 0);
+      ui.uiTime.textContent = fmtTime(ms);
+    }, 250);
+  }
+  function stopTimer(){
+    if(tInterval) clearInterval(tInterval);
+    tInterval = null;
+  }
+  function getElapsedMs(){
+    if(!game) return 0;
+    return (performance.now() - tStart) + (game.timeOffsetMs || 0);
+  }
+
+  function buildAutoHints(task){
+    const ans = (task.answer || "").toString();
+    const w = countWords(ans);
+
+    const firstLetters = ans
+      .split(/\s+/).filter(Boolean)
+      .map(word => (word.match(/[A-Za-zÀ-ž0-9]/) ? word[word.search(/[A-Za-zÀ-ž0-9]/)] : ""))
+      .join(" ");
+
+    const h1 = `Clue: the answer is ${w} word(s).`;
+    const h2 = `Format: first letter(s) → ${firstLetters || "(n/a)"}`;
+    const h3 = `More help: ${chooseMaskPattern(ans, 0.50)}`;
+    const h4 = `80% reveal: ${chooseMaskPattern(ans, 0.80)}`;
+    const h5 = `90% reveal: ${chooseMaskPattern(ans, 0.90)}`;
+
+    const openNote = (task.type==="OPEN") ? `\n(Remember: 1–3 words.)` : "";
+    return [h1+openNote, h2, h3, h4, h5];
+  }
+
+  function getHintForState(task, wrongAttempts, manualHintClicks){
+    const baseStageFromWrong = clamp(wrongAttempts, 0, 5);
+    const baseStageFromManual = clamp(manualHintClicks, 0, 5);
+    const stage = clamp(Math.max(baseStageFromWrong, baseStageFromManual), 0, 5);
+
+    if(stage===0) return {stage:0, text:""};
+    const hints = (task.hints && task.hints.length) ? task.hints : buildAutoHints(task);
+
+    const full = [];
+    for(let i=0;i<5;i++) full.push(hints[i] ?? buildAutoHints(task)[i]);
+    return {stage, text: full[stage-1]};
+  }
+
+  function parseGameText(raw){
+    const text = raw.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+    const lines = text.split("\n");
+
+    let idx = 0;
+    function nextLine(){
+      if(idx >= lines.length) return null;
+      return lines[idx++].trimEnd();
+    }
+
+    let headerFound = false;
+    while(idx < lines.length){
+      const l = lines[idx].trim();
+      if(!l){ idx++; continue; }
+      if(l.toUpperCase() === "#ESCAPE_ROOM_V1"){
+        headerFound = true;
+        idx++;
+        break;
+      } else {
+        idx++;
+      }
+    }
+    if(!headerFound) throw new Error("Missing header #ESCAPE_ROOM_V1.");
+
+    const rooms = [];
+    let currentRoom = null;
+    let currentTask = null;
+
+    function pushTaskIfComplete(){
+      if(!currentTask) return;
+      const type = currentTask.type;
+      if(!type) throw new Error("Task type missing.");
+      if(type==="MCQ"){
+        if(!currentTask.question) throw new Error("MCQ question missing.");
+        if(!currentTask.options || currentTask.options.length<2) throw new Error("MCQ options missing.");
+        if(!currentTask.answer) throw new Error("MCQ ANS missing (e.g. ANS::B).");
+      } else if(type==="TF"){
+        if(!currentTask.question) throw new Error("TF question missing.");
+        if(!currentTask.answer) throw new Error("TF ANS missing (TRUE/FALSE).");
+      } else {
+        if(!currentTask.question) throw new Error(type+" question missing.");
+        if(!currentTask.answer) throw new Error(type+" ANS missing.");
+      }
+      currentRoom.tasks.push(currentTask);
+      currentTask = null;
+    }
+
+    function startRoom(n){
+      if(currentRoom){
+        pushTaskIfComplete();
+        rooms.push(currentRoom);
+      }
+      currentRoom = { index: n, tasks: [] };
+      currentTask = null;
+    }
+
+    const roomHeaderRe = /^\[?\s*ROOM\s+(\d+)\s*\]?\s*$/i;
+    const keyRe = /^([A-Z0-9_]+)::\s*(.*)$/;
+
+    while(idx < lines.length){
+      const rawLine = nextLine();
+      if(rawLine === null) break;
+      const line = rawLine.trim();
+      if(!line) continue;
+
+      const rh = line.match(roomHeaderRe);
+      if(rh){
+        const n = parseInt(rh[1],10);
+        startRoom(n);
+        continue;
+      }
+
+      const m = line.match(keyRe);
+      if(!m) continue;
+      const key = m[1].toUpperCase();
+      const val = m[2];
+
+      if(TASK_ORDER.includes(key)){
+        pushTaskIfComplete();
+        if(!currentRoom) throw new Error("Found task before any [ROOM n] header.");
+        currentTask = { type:key, question: val || "", options: [], keyWord:"", answer:"", hints:[] };
+        continue;
+      }
+
+      if(!currentTask) continue;
+
+      if(key==="OPTS"){
+        const parts = val.split("|").map(s=>s.trim()).filter(Boolean);
+        currentTask.options = parts;
+      } else if(key==="Q"){
+        currentTask.question = val;
+      } else if(key==="ANS"){
+        currentTask.answer = val;
+      } else if(key==="KEY"){
+        currentTask.keyWord = val;
+      } else if(key==="H1"||key==="H2"||key==="H3"||key==="H4"||key==="H5"){
+        const i = parseInt(key.slice(1),10)-1;
+        currentTask.hints[i] = val;
+      }
+    }
+
+    if(currentRoom){
+      pushTaskIfComplete();
+      rooms.push(currentRoom);
+    }
+
+    rooms.sort((a,b)=>a.index-b.index);
+
+    if(rooms.length !== 9) throw new Error(`Expected 9 rooms, found ${rooms.length}.`);
+    for(let i=0;i<9;i++){
+      const expected = i+1;
+      if(rooms[i].index !== expected) throw new Error(`Room numbering must be 1–9 in order. Missing or wrong room: ${expected}.`);
+      if(rooms[i].tasks.length !== 6) throw new Error(`Room ${expected} must have exactly 6 tasks (found ${rooms[i].tasks.length}).`);
+      for(let t=0;t<6;t++){
+        const typ = rooms[i].tasks[t].type;
+        const exp = TASK_ORDER[t];
+        if(typ !== exp) throw new Error(`Room ${expected}, task ${t+1} must be ${exp} (found ${typ}).`);
+      }
+    }
+
+    return { rooms };
+  }
+
+  function parseGameJSON(obj){
+    if(!obj || typeof obj !== "object") throw new Error("Invalid JSON.");
+    if(typeof obj.format !== "string") throw new Error("JSON missing 'format'.");
+    if(!Array.isArray(obj.rooms)) throw new Error("JSON missing 'rooms' array.");
+    if(obj.rooms.length !== 9) throw new Error(`Expected 9 rooms, found ${obj.rooms.length}.`);
+
+    const rooms = [];
+    for(let i=0;i<obj.rooms.length;i++){
+      const rObj = obj.rooms[i];
+      const roomIndex = (typeof rObj.room === "number") ? rObj.room : (i+1);
+      if(roomIndex !== i+1) throw new Error(`Room numbering must be 1–9 in order. Missing or wrong room: ${i+1}.`);
+      if(!Array.isArray(rObj.tasks)) throw new Error(`Room ${i+1} missing tasks array.`);
+      if(rObj.tasks.length !== 6) throw new Error(`Room ${i+1} must have exactly 6 tasks (found ${rObj.tasks.length}).`);
+
+      const tasks = [];
+      for(let t=0;t<6;t++){
+        const taskObj = rObj.tasks[t];
+        if(!taskObj || typeof taskObj !== "object") throw new Error(`Room ${i+1}, task ${t+1}: invalid task.`);
+        const type = (taskObj.type || "").toString().trim().toUpperCase();
+        const exp = TASK_ORDER[t];
+        if(type !== exp) throw new Error(`Room ${i+1}, task ${t+1} must be ${exp} (found ${type}).`);
+
+        const question = (taskObj.prompt ?? taskObj.question ?? "").toString();
+        const answer = (taskObj.answer ?? "").toString();
+        const options = Array.isArray(taskObj.options) ? taskObj.options.map(x=>String(x)) : [];
+        const keyWord = (taskObj.key ?? taskObj.keyword ?? taskObj.keyWord ?? "").toString();
+
+        let hints = [];
+        if(taskObj.hints && typeof taskObj.hints === "object" && !Array.isArray(taskObj.hints)){
+          hints[0] = (taskObj.hints.H1 ?? taskObj.hints.h1 ?? "").toString() || undefined;
+          hints[1] = (taskObj.hints.H2 ?? taskObj.hints.h2 ?? "").toString() || undefined;
+          hints[2] = (taskObj.hints.H3 ?? taskObj.hints.h3 ?? "").toString() || undefined;
+          hints[3] = (taskObj.hints.H4 ?? taskObj.hints.h4 ?? "").toString() || undefined;
+          hints[4] = (taskObj.hints.H5 ?? taskObj.hints.h5 ?? "").toString() || undefined;
+        } else if(Array.isArray(taskObj.hints)){
+          hints = taskObj.hints.map(x=>String(x));
+        }
+
+        const tNorm = {
+          type,
+          question,
+          options,
+          answer,
+          keyWord,
+          hints
+        };
+
+        // Validation similar to TXT
+        if(type==="MCQ"){
+          if(!tNorm.question) throw new Error(`Room ${i+1}, MCQ question missing.`);
+          if(!tNorm.options || tNorm.options.length<2) throw new Error(`Room ${i+1}, MCQ options missing.`);
+          if(!tNorm.answer) throw new Error(`Room ${i+1}, MCQ answer missing.`);
+        } else if(type==="TF"){
+          if(!tNorm.question) throw new Error(`Room ${i+1}, TF question missing.`);
+          if(!tNorm.answer) throw new Error(`Room ${i+1}, TF answer missing.`);
+        } else {
+          if(!tNorm.question) throw new Error(`Room ${i+1}, ${type} question missing.`);
+          if(!tNorm.answer) throw new Error(`Room ${i+1}, ${type} answer missing.`);
+        }
+
+        tasks.push(tNorm);
+      }
+
+      rooms.push({ index: roomIndex, tasks });
+    }
+
+    return { rooms };
+  }
+
+  function parseGameAny(raw){
+    const obj = tryParseJSON(raw);
+    if(obj){
+      return parseGameJSON(obj);
+    }
+    return parseGameText(raw);
+  }
+
+  function renderChecklist(){
+    const box = ui.roomChecklist;
+    box.innerHTML = "";
+    const wrap = document.createElement("div");
+    wrap.style.display="grid";
+    wrap.style.gridTemplateColumns="1fr";
+    wrap.style.gap="10px";
+
+    for(let r=0;r<9;r++){
+      const roomRow = document.createElement("div");
+      roomRow.style.padding="12px";
+      roomRow.style.border="1px solid rgba(126,200,255,.22)";
+      roomRow.style.borderRadius="16px";
+      roomRow.style.background="rgba(3,8,18,.18)";
+      const solvedCount = game.rooms[r].solved.filter(Boolean).length;
+
+      roomRow.innerHTML = `
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div style="font-weight:850;">Room ${r+1}</div>
+          <div class="pill">Solved: <b>${solvedCount}/6</b></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+          ${game.rooms[r].solved.map((s, i) => {
+            const t = TASK_ORDER[i];
+            const c = s ? "rgba(55,214,122,.22)" : "rgba(3,8,18,.10)";
+            const b = s ? "rgba(55,214,122,.40)" : "rgba(126,200,255,.22)";
+            const txt = s ? "✓" : "•";
+            return `<span class="pill" style="background:${c};border-color:${b};"><b>${txt}</b> ${t}</span>`;
+          }).join("")}
+        </div>
+      `;
+      wrap.appendChild(roomRow);
+    }
+    box.appendChild(wrap);
+  }
+
+  function updateTopStats(){
+    if(!game){
+      ui.uiRoom.textContent="–";
+      ui.uiTask.textContent="–";
+      ui.uiHints.textContent="0";
+      ui.uiAttempts.textContent="0";
+      ui.uiMode.textContent="MODE: —";
+      return;
+    }
+    ui.uiRoom.textContent = String(game.currentRoom + 1);
+    ui.uiTask.textContent = String(game.currentTask + 1);
+    ui.uiHints.textContent = String(game.hintsUsed);
+    ui.uiAttempts.textContent = String(game.attemptsTotal);
+    ui.uiMode.textContent = teacherMode ? "MODE: TEACHER" : "MODE: STUDENT";
+  }
+
+  function resetTaskUI(){
+    ui.fb.className = "feedback";
+    ui.fb.textContent = "";
+    ui.hintBoxGame.classList.remove("show");
+    ui.hintBoxGame.textContent = "";
+    ui.answerReveal.style.display="none";
+    ui.answerReveal.textContent = "";
+    ui.btnNextTask.style.display="none";
+    ui.btnNextRoom.style.display="none";
+    ui.btnCheck.disabled=false;
+    ui.btnHint.disabled=false;
+
+    ui.mcqBox.style.display="none";
+    ui.inputBox.style.display="none";
+    ui.btnHint.style.display="none";
+    ui.btnShowAnswer.style.display = teacherMode ? "inline-block" : "none";
+
+    ui.ttsRow.style.display = "none";
+  }
+
+  function renderCurrent(){
+    const r = game.currentRoom;
+    const t = game.currentTask;
+    const task = game.rooms[r].tasks[t];
+
+    ui.roomTitle.textContent = `Room ${r+1} / 9`;
+    ui.taskTitle.textContent = `Task ${t+1} of 6`;
+    ui.taskType.textContent = task.type;
+    ui.taskSolved.textContent = String(game.rooms[r].solved.filter(Boolean).length);
+
+    const solvedThis = game.rooms[r].solved[t] === true;
+
+    const roomSolvedCount = game.rooms[r].solved.filter(Boolean).length;
+    ui.roomProgressBar.style.width = (roomSolvedCount/6*100).toFixed(0)+"%";
+
+    renderChecklist();
+    resetTaskUI();
+
+    ui.qText.textContent = task.question || "";
+
+    if(task.type === "MCQ" || task.type === "OPEN"){
+      ui.ttsRow.style.display = "flex";
+    }
+
+    if(task.type === "MCQ"){
+      ui.mcqBox.style.display="block";
+      ui.mcqChoices.innerHTML="";
+      const name = `mcq_${r}_${t}`;
+      task.options.forEach((opt, i) => {
+        const id = `${name}_${i}`;
+        const wrap = document.createElement("label");
+        wrap.className="choice";
+        wrap.setAttribute("for", id);
+        wrap.innerHTML = `
+          <input type="radio" name="${name}" id="${id}" value="${escapeHtml(opt)}" />
+          <div style="line-height:1.25">${escapeHtml(opt)}</div>
+        `;
+        ui.mcqChoices.appendChild(wrap);
+      });
+    } else if(task.type === "TF"){
+      ui.mcqBox.style.display="block";
+      ui.mcqChoices.innerHTML="";
+      const name = `tf_${r}_${t}`;
+      const opts = ["TRUE","FALSE"];
+      opts.forEach((o, i) => {
+        const id = `${name}_${i}`;
+        const wrap = document.createElement("label");
+        wrap.className="choice";
+        wrap.setAttribute("for", id);
+        wrap.innerHTML = `
+          <input type="radio" name="${name}" id="${id}" value="${o}" />
+          <div style="line-height:1.25">${o}</div>
+        `;
+        ui.mcqChoices.appendChild(wrap);
+      });
+    } else {
+      ui.inputBox.style.display="block";
+      ui.answerInput.value = "";
+      ui.answerInput.placeholder = (task.type==="OPEN") ? "1–3 words" : "";
+      ui.inputLabel.textContent = "Your answer";
+    }
+
+    if(["OPEN","GAP","VOCAB","TRANSFORM"].includes(task.type)){
+      ui.btnHint.style.display="inline-block";
+    } else {
+      ui.btnHint.style.display="none";
+    }
+
+    ui.btnShowAnswer.style.display = teacherMode ? "inline-block" : "none";
+
+    if(task.type === "TRANSFORM"){
+      const hs = game.rooms[r].hintState[t];
+      const hints = (task.hints && task.hints.length) ? task.hints : buildAutoHints(task);
+      const clue = (hints && hints[0]) ? hints[0] : buildAutoHints(task)[0];
+      ui.hintBoxGame.classList.add("show");
+      ui.hintBoxGame.textContent = clue;
+      if(hs.maxShownStage < 1) hs.maxShownStage = 1;
+    }
+
+    if(solvedThis){
+      ui.fb.className = "feedback good";
+      ui.fb.textContent = "Already solved.";
+      ui.btnCheck.disabled=true;
+      ui.btnHint.disabled=true;
+      ui.btnNextTask.style.display = (t < 5) ? "inline-block" : "none";
+      const roomDone = game.rooms[r].solved.every(Boolean);
+      if(t===5 && roomDone){
+        ui.btnNextRoom.style.display = (r < 8) ? "inline-block" : "none";
+      }
+    }
+
+    ui.navNote.textContent = "";
+    updateTopStats();
+
+    setTimeout(() => {
+      if(ui.inputBox.style.display !== "none") ui.answerInput.focus();
+      else{
+        const first = ui.mcqChoices.querySelector("input");
+        if(first) first.focus();
+      }
+    }, 50);
+  }
+
+  function advanceTaskOrRoom(){
+    const r = game.currentRoom;
+    const t = game.currentTask;
+
+    if(t < 5){
+      game.currentTask++;
+      renderCurrent();
+      return;
+    }
+    const roomDone = game.rooms[r].solved.every(Boolean);
+    if(!roomDone){
+      const firstUns = game.rooms[r].solved.findIndex(x=>!x);
+      game.currentTask = Math.max(0, firstUns);
+      renderCurrent();
+      return;
+    }
+
+    if(r < 8){
+      ui.btnNextRoom.style.display = "inline-block";
+    } else {
+      finishGame();
+    }
+  }
+
+  function onRoomCompleted(){
+    beepSuccess();
+    confettiBurst(1400);
+  }
+
+  function safeFilePart(s){
+    return (s || "player").toString().trim().replace(/[^\w\-]+/g,"_").slice(0,40) || "player";
+  }
+  function makeMissionId(){
+    const now = new Date();
+    const a = now.getFullYear().toString().slice(2);
+    const b = String(now.getMonth()+1).padStart(2,"0");
+    const c = String(now.getDate()).padStart(2,"0");
+    const rand = Math.floor(Math.random()*9000)+1000;
+    return `ER-${a}${b}${c}-${rand}`;
+  }
+  function drawRoundedRect(ctx, x,y,w,h,r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y, rr);
+    ctx.closePath();
+  }
+
+  function buildCertificateImage(){
+    if(!game) return;
+
+    const totalSolved = game.rooms.reduce((sum, room) => sum + room.solved.filter(Boolean).length, 0);
+    const totalTasks = 9*6;
+
+    const totalMs = getElapsedMs();
+    const timeStr = fmtTime(totalMs);
+
+    const completedAt = new Date();
+    const completedAtStr = completedAt.toLocaleString(undefined, {
+      year:"numeric", month:"long", day:"2-digit", hour:"2-digit", minute:"2-digit"
+    });
+
+    if(!game.missionId) game.missionId = makeMissionId();
+
+    const W = 1400;
+    const H = 900;
+
+    const canvas = ui.certCanvas;
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+
+    const g = ctx.createLinearGradient(0,0,W,H);
+    g.addColorStop(0, "#bfe6ff");
+    g.addColorStop(0.35, "#7ec8ff");
+    g.addColorStop(0.7, "#ffd166");
+    g.addColorStop(1, "#3b82f6");
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+
+    for(let i=0;i<140;i++){
+      const x = Math.random()*W;
+      const y = Math.random()*H;
+      const r = 2 + Math.random()*7;
+      const col = ["#ffffff","#0b2a57","#173d80","#22c55e","#ff4d6d","#f59e0b","#3b82f6"][Math.floor(Math.random()*7)];
+      ctx.globalAlpha = 0.20 + Math.random()*0.22;
+      ctx.beginPath();
+      ctx.fillStyle = col;
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    const pad = 70;
+    const panelX = pad, panelY = pad, panelW = W - pad*2, panelH = H - pad*2;
+
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,.25)";
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 14;
+    ctx.fillStyle = "rgba(6,26,61,.78)";
+    drawRoundedRect(ctx, panelX, panelY, panelW, panelH, 34);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(255,209,102,.75)";
+    ctx.lineWidth = 6;
+    drawRoundedRect(ctx, panelX+10, panelY+10, panelW-20, panelH-20, 28);
+    ctx.stroke();
+
+    const ribbonH = 92;
+    const rg = ctx.createLinearGradient(panelX, panelY, panelX+panelW, panelY);
+    rg.addColorStop(0, "rgba(255,209,102,.95)");
+    rg.addColorStop(0.45, "rgba(126,200,255,.92)");
+    rg.addColorStop(1, "rgba(55,214,122,.90)");
+    ctx.fillStyle = rg;
+    drawRoundedRect(ctx, panelX+28, panelY+28, panelW-56, ribbonH, 24);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(0,0,0,.85)";
+    ctx.font = "900 44px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("CERTIFICATE OF COMPLETION", W/2, panelY+28+58);
+
+    ctx.fillStyle = "rgba(234,243,255,.95)";
+    ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+    ctx.fillText("Escape Room Mission", W/2, panelY+28+ribbonH+70);
+
+    ctx.fillStyle = "rgba(234,243,255,.98)";
+    ctx.font = "900 52px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+    ctx.fillText(game.playerName, W/2, panelY+28+ribbonH+145);
+
+    ctx.strokeStyle = "rgba(126,200,255,.55)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(panelX+160, panelY+28+ribbonH+172);
+    ctx.lineTo(panelX+panelW-160, panelY+28+ribbonH+172);
+    ctx.stroke();
+
+    const statsTop = panelY+28+ribbonH+205;
+    const cardGap = 18;
+    const cardH = 110;
+    const cardW = Math.floor((panelW-56 - cardGap*2)/3);
+    const cardX0 = panelX+28;
+
+    const cards = [
+      {title:"Time used", value: timeStr},
+      {title:"Hints used", value: String(game.hintsUsed)},
+      {title:"Attempts", value: String(game.attemptsTotal)}
+    ];
+
+    for(let i=0;i<3;i++){
+      const x = cardX0 + i*(cardW+cardGap);
+      const y = statsTop;
+
+      ctx.fillStyle = "rgba(3,8,18,.35)";
+      drawRoundedRect(ctx, x, y, cardW, cardH, 22);
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(126,200,255,.35)";
+      ctx.lineWidth = 2;
+      drawRoundedRect(ctx, x, y, cardW, cardH, 22);
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(183,203,230,.95)";
+      ctx.font = "800 22px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(cards[i].title, x+cardW/2, y+38);
+
+      ctx.fillStyle = "rgba(234,243,255,.98)";
+      ctx.font = "900 34px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.fillText(cards[i].value, x+cardW/2, y+82);
+    }
+
+    const boxY = statsTop + cardH + 22;
+    const boxH = 250;
+    ctx.fillStyle = "rgba(3,8,18,.28)";
+    drawRoundedRect(ctx, panelX+28, boxY, panelW-56, boxH, 26);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,209,102,.35)";
+    ctx.lineWidth = 2;
+    drawRoundedRect(ctx, panelX+28, boxY, panelW-56, boxH, 26);
+    ctx.stroke();
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(234,243,255,.98)";
+    ctx.font = "900 26px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+    ctx.fillText("Mission record", panelX+60, boxY+56);
+
+    ctx.fillStyle = "rgba(234,243,255,.92)";
+    ctx.font = "750 22px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+
+    const leftX = panelX+60;
+    const rightX = panelX+panelW-60;
+    const rowY0 = boxY+98;
+    const lineH = 34;
+
+    const rows = [
+      ["Solved tasks", `${totalSolved}/${totalTasks}`],
+      ["Rooms completed", `9/9`],
+      ["Mode", teacherMode ? "TEACHER" : "STUDENT"],
+      ["Completed at", completedAtStr],
+      ["Mission ID", game.missionId]
+    ];
+
+    for(let i=0;i<rows.length;i++){
+      const y = rowY0 + i*lineH;
+      ctx.fillStyle = "rgba(183,203,230,.95)";
+      ctx.fillText(rows[i][0] + ":", leftX, y);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "rgba(234,243,255,.96)";
+      ctx.fillText(rows[i][1], rightX, y);
+      ctx.textAlign = "left";
+    }
+
+    ctx.fillStyle = "rgba(183,203,230,.90)";
+    ctx.font = "700 18px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Send this certificate to your teacher as proof of completion.", W/2, panelY+panelH-46);
+
+    try{
+      const url = canvas.toDataURL("image/png");
+      ui.certPreview.src = url;
+    }catch(e){}
+  }
+
+  function downloadCertificate(kind){
+  if(!game) return;
+  const canvas = ui.certCanvas;
+  if(!canvas || !canvas.width) buildCertificateImage();
+
+  const fileBase = `EscapeRoom_Certificate_${safeFilePart(game.playerName)}_${game.missionId || "mission"}`;
+  const mime = (kind === "jpg") ? "image/jpeg" : "image/png";
+  const ext = (kind === "jpg") ? "jpg" : "png";
+  const quality = (kind === "jpg") ? 0.92 : undefined;
+
+  // Prefer toBlob + Web Share on iPad/iOS (more reliable than dataURL downloads in many viewers)
+  try{
+    canvas.toBlob(async (blob) => {
+      if(!blob){
+        // Fallback to old dataURL method
+        let url = "";
+        try{
+          url = canvas.toDataURL(mime, quality);
+        }catch(e){ return; }
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${fileBase}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
+      }
+
+      const filename = `${fileBase}.${ext}`;
+
+      // 1) iOS-friendly: Share sheet (Save to Files / AirDrop / etc.)
+      try{
+        const file = new File([blob], filename, { type: mime });
+        if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
+          await navigator.share({ files:[file], title: fileBase });
+          return;
+        }
+      }catch(e){}
+
+      // 2) Standard download via object URL
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = filename;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      // 3) Extra iOS fallback: open the image in a new tab so the user can long-press "Save Image"
+      if(__isIOS){
+        try{ window.open(objUrl, "_blank"); }catch(e){}
+      }
+
+      setTimeout(() => { try{ URL.revokeObjectURL(objUrl); }catch(e){} }, 15000);
+    }, mime, quality);
+  }catch(e){
+    // Last resort
+    let url = "";
+    try{
+      url = canvas.toDataURL(mime, quality);
+    }catch(err){ return; }
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${fileBase}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+}
+
+  ui.btnDownloadPNG.addEventListener("click", () => downloadCertificate("png"));
+  ui.btnDownloadJPG.addEventListener("click", () => downloadCertificate("jpg"));
+
+  function finishGame(){
+    stopTimer();
+    stopSpeak();
+    const totalMs = getElapsedMs();
+    const timeStr = fmtTime(totalMs);
+    const lines = [];
+    lines.push(`Player: ${game.playerName}`);
+    lines.push(`Mode: ${teacherMode ? "TEACHER" : "STUDENT"}`);
+    lines.push(`Time used: ${timeStr}`);
+    lines.push(`Hints used: ${game.hintsUsed}`);
+    lines.push(`Attempts: ${game.attemptsTotal}`);
+    ui.finalStats.textContent = lines.join("\n");
+    ui.finalTitle.textContent = "You escaped all 9 rooms!";
+    setScreen(ui.screenFinal);
+    buildCertificateImage();
+  }
+
+  function getUserAnswer(task){
+    if(task.type==="MCQ"){
+      const picked = ui.mcqChoices.querySelector('input[type="radio"]:checked');
+      if(!picked) return "";
+      return picked.value;
+    }
+    if(task.type==="TF"){
+      const picked = ui.mcqChoices.querySelector('input[type="radio"]:checked');
+      return picked ? picked.value : "";
+    }
+    return ui.answerInput.value;
+  }
+
+  function isCorrect(task, userAns){
+    const a = normForCheck(task.answer);
+
+    if(task.type==="MCQ"){
+      const ua = normForCheck(userAns);
+      const ansRaw = normSpaces(task.answer);
+      const ansLetter = ansRaw.trim().toUpperCase();
+      if(["A","B","C","D","E","F"].includes(ansLetter)){
+        const idx = ansLetter.charCodeAt(0) - "A".charCodeAt(0);
+        const opt = (task.options && task.options[idx]) ? task.options[idx] : "";
+        return ua === normForCheck(opt) || ua === ansLetter.toLowerCase();
+      }
+      return ua === a;
+    }
+
+    if(task.type==="TF"){
+      const ua = normSpaces(userAns).toUpperCase();
+      const ta = normSpaces(task.answer).toUpperCase();
+      return ua === ta;
+    }
+
+    const ua = normForCheck(userAns);
+    return ua === a;
+  }
+
+  function showAutoHint(task, wrongAttempts){
+    if(!["OPEN","GAP","VOCAB","TRANSFORM"].includes(task.type)) return;
+
+    const r = game.currentRoom, t = game.currentTask;
+    const hintState = game.rooms[r].hintState[t];
+    const manualClicks = hintState.manualClicks || 0;
+    const {stage, text} = getHintForState(task, wrongAttempts, manualClicks);
+
+    if(stage>0){
+      ui.hintBoxGame.classList.add("show");
+      ui.hintBoxGame.textContent = text;
+      if(stage > hintState.maxShownStage){
+        game.hintsUsed++;
+        hintState.maxShownStage = stage;
+        updateTopStats();
+      }
+    }
+  }
+
+  function manualHint(task){
+    if(!["OPEN","GAP","VOCAB","TRANSFORM"].includes(task.type)) return;
+    const r = game.currentRoom, t = game.currentTask;
+    const hintState = game.rooms[r].hintState[t];
+    hintState.manualClicks = clamp((hintState.manualClicks || 0) + 1, 0, 5);
+
+    const {stage, text} = getHintForState(task, hintState.wrongAttempts || 0, hintState.manualClicks || 0);
+    if(stage>0){
+      ui.hintBoxGame.classList.add("show");
+      ui.hintBoxGame.textContent = text;
+      if(stage > hintState.maxShownStage){
+        game.hintsUsed++;
+        hintState.maxShownStage = stage;
+        updateTopStats();
+      }
+    }
+  }
+
+  function checkCurrent(){
+    const r = game.currentRoom;
+    const t = game.currentTask;
+    const task = game.rooms[r].tasks[t];
+
+    const userAns = getUserAnswer(task);
+
+    game.attemptsTotal++;
+    updateTopStats();
+
+    if(!normSpaces(userAns)){
+      ui.fb.className="feedback";
+      ui.fb.textContent="Please enter/select an answer first.";
+      return;
+    }
+
+    const ok = isCorrect(task, userAns);
+
+    if(ok){
+      soundCorrect();
+
+      if(!game.rooms[r].solved[t]){
+        game.rooms[r].solved[t] = true;
+      }
+      ui.fb.className="feedback good";
+      ui.fb.textContent="Correct! ✅";
+      ui.btnCheck.disabled=true;
+      ui.btnHint.disabled=true;
+
+      ui.btnNextTask.style.display = (t < 5) ? "inline-block" : "none";
+
+      const roomDone = game.rooms[r].solved.every(Boolean);
+      if(roomDone){
+        if(!game.rooms[r].roomCelebrated){
+          game.rooms[r].roomCelebrated = true;
+          onRoomCompleted();
+        }
+        if(t === 5){
+          ui.btnNextRoom.style.display = (r < 8) ? "inline-block" : "none";
+        }
+      }
+
+      ui.taskSolved.textContent = String(game.rooms[r].solved.filter(Boolean).length);
+      ui.roomProgressBar.style.width = (game.rooms[r].solved.filter(Boolean).length/6*100).toFixed(0)+"%";
+      renderChecklist();
+
+      if(t===5 && roomDone && r===8){
+        finishGame();
+        return;
+      }
+      return;
+    }
+
+    ui.fb.className="feedback bad";
+    ui.fb.textContent="Not quite. Try again.";
+    soundWrong();
+
+    const hs = game.rooms[r].hintState[t];
+    hs.wrongAttempts = clamp((hs.wrongAttempts || 0) + 1, 0, 999);
+
+    if(task.type==="OPEN"){
+      const wc = countWords(userAns);
+      if(wc > 3){
+        ui.fb.textContent = "Not quite. Reminder: OPEN answers must be 1–3 words.";
+      }
+    }
+
+    showAutoHint(task, hs.wrongAttempts);
+  }
+
+  function toggleAnswerReveal(){
+    const r = game.currentRoom;
+    const t = game.currentTask;
+    const task = game.rooms[r].tasks[t];
+
+    const showing = ui.answerReveal.style.display !== "none";
+    if(showing){
+      ui.answerReveal.style.display="none";
+      ui.answerReveal.textContent="";
+      ui.btnShowAnswer.textContent="Show answer (Teacher)";
+      return;
+    }
+    ui.answerReveal.style.display="block";
+    let extra = "";
+    if(task.type==="TRANSFORM" && task.keyWord){
+      extra = `\nKEYWORD: ${task.keyWord}`;
+    }
+    ui.answerReveal.textContent = `ANSWER: ${task.answer}${extra}`;
+    ui.btnShowAnswer.textContent="Hide answer (Teacher)";
+  }
+
+  function hardRestart(){
+    if(!game) return;
+    stopSpeak();
+    game.currentRoom = 0;
+    game.currentTask = 0;
+    game.hintsUsed = 0;
+    game.attemptsTotal = 0;
+    game.timeOffsetMs = 0;
+    game.missionId = null;
+
+    for(let r=0;r<9;r++){
+      game.rooms[r].solved = Array(6).fill(false);
+      game.rooms[r].hintState = Array.from({length:6}, () => ({wrongAttempts:0, manualClicks:0, maxShownStage:0}));
+      game.rooms[r].roomCelebrated = false;
+    }
+
+    startTimer();
+    setScreen(ui.screenGame);
+    renderCurrent();
+  }
+
+  function returnToStart(){
+    stopTimer();
+    stopSpeak();
+    setScreen(ui.screenStart);
+  }
+
+  function jumpToEndTeacher(){
+    if(!teacherMode || !game) return;
+    finishGame();
+  }
+
+  function jumpToNextRoomTeacher(){
+    if(!teacherMode || !game) return;
+    if(game.currentRoom < 8){
+      game.currentRoom++;
+      game.currentTask = 0;
+      renderCurrent();
+    } else {
+      finishGame();
+    }
+  }
+
+  function finalTeacherGate(){
+    const code = prompt("Teacher code required:");
+    if(code === null) return false;
+    return normSpaces(code) === "1964";
+  }
+
+  const helpText =
+`FILE FORMAT (STRICT, AI-FRIENDLY)
+
+#ESCAPE_ROOM_V1
+
+OPTIONAL SOURCE SECTION (for pre-reading on the start screen):
+[SOURCE]
+(paste the source reading text here)
+[/SOURCE]
+
+[ROOM 1]
+MCQ::Question text?
+OPTS::A) option one|B) option two|C) option three|D) option four
+ANS::B
+
+OPEN::WH-question? (Answer must be 1–3 words.)
+ANS::your short answer
+H1::(optional) clue/definition
+H2::(optional) more help
+H3::(optional) ...
+H4::(optional) 80% reveal (if you want custom)
+H5::(optional) 90% reveal (if you want custom)
+
+TF::Statement to judge.
+ANS::TRUE
+
+GAP::Sentence with ___ gap.
+ANS::missing words
+
+VOCAB::Definition of a word from the text.
+ANS::target word
+
+TRANSFORM::Sentence + KEYWORD in CAPS.
+KEY::KEYWORD
+ANS::final transformed answer
+
+Repeat up to [ROOM 9].
+Each room MUST have exactly 6 tasks in this exact order:
+1) MCQ  2) OPEN  3) TF  4) GAP  5) VOCAB  6) TRANSFORM`;
+
+  $("#btnHelp").addEventListener("click", () => {
+    ui.helpBox.style.display = (ui.helpBox.style.display==="none") ? "block" : "none";
+    ui.helpBox.textContent = helpText;
+  });
+
+  $("#fileInput").addEventListener("change", async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    const txt = await f.text();
+
+    uploadedFileText = txt;
+    $("#pasteBox").value = "";
+
+    updateSourcePreviewFromRaw(txt);
+
+    ui.startMsg.className="feedback";
+    ui.startMsg.textContent = "";
+  });
+
+  $("#btnLoad").addEventListener("click", () => {
+    const pasted = $("#pasteBox").value;
+    const raw = normSpaces(pasted) ? pasted : uploadedFileText;
+
+    const name = normSpaces($("#playerName").value);
+    if(!name){
+      ui.startMsg.className="feedback bad";
+      ui.startMsg.textContent = "Player name is required.";
+      return;
+    }
+    if(!normSpaces(raw)){
+      ui.startMsg.className="feedback bad";
+      ui.startMsg.textContent = "Upload a TXT/JSON file or paste its content first.";
+      return;
+    }
+
+    if(normSpaces(pasted)) updateSourcePreviewFromRaw(pasted);
+
+    try{
+      const parsed = parseGameAny(raw);
+      const code = normSpaces($("#teacherCode").value);
+      teacherMode = (code === "1964");
+
+      game = {
+        playerName: name,
+        voiceURI: (voiceSelect && voiceSelect.value) ? voiceSelect.value : "",
+        rooms: parsed.rooms.map(r => ({
+          index: r.index,
+          tasks: r.tasks.map(t => ({
+            type: t.type,
+            question: t.question || "",
+            options: (t.options || []).slice(),
+            answer: t.answer || "",
+            keyWord: t.keyWord || "",
+            hints: (t.hints || []).slice()
+          })),
+          solved: Array(6).fill(false),
+          hintState: Array.from({length:6}, () => ({wrongAttempts:0, manualClicks:0, maxShownStage:0})),
+          roomCelebrated: false
+        })),
+        currentRoom: 0,
+        currentTask: 0,
+        hintsUsed: 0,
+        attemptsTotal: 0,
+        timeOffsetMs: 0,
+        missionId: null
+      };
+
+      chosenVoiceURI = voiceSelect.value || chosenVoiceURI || "";
+      if(chosenVoiceURI) game.voiceURI = chosenVoiceURI;
+
+      ui.startMsg.className="feedback good";
+      ui.startMsg.textContent = "Valid file ✓";
+      $("#btnStart").disabled = false;
+
+    }catch(err){
+      ui.startMsg.className="feedback bad";
+      ui.startMsg.textContent = "Validation failed: " + (err && err.message ? err.message : String(err));
+      $("#btnStart").disabled = true;
+      game = null;
+      teacherMode = false;
+    }
+  });
+
+  $("#btnStart").addEventListener("click", () => {
+    if(!game) return;
+
+    preStartSourceText = "";
+    sourcePreview.classList.add("muted");
+    sourcePreview.textContent = "Upload or paste a game file that contains a SOURCE section.";
+    btnSpeakSource.disabled = true;
+
+    ui.playerPill.innerHTML = `Player: <b>${escapeHtml(game.playerName)}</b>`;
+
+    ui.btnTeacherJumpEnd.style.display = teacherMode ? "inline-block" : "none";
+    ui.btnTeacherNextRoom.style.display = teacherMode ? "inline-block" : "none";
+    ui.btnTeacherReturn.style.display = teacherMode ? "inline-block" : "none";
+
+    updateTopStats();
+    startTimer();
+    setScreen(ui.screenGame);
+    renderCurrent();
+  });
+
+  ui.btnTeacherJumpEnd.addEventListener("click", () => jumpToEndTeacher());
+  ui.btnTeacherNextRoom.addEventListener("click", () => jumpToNextRoomTeacher());
+  ui.btnTeacherReturn.addEventListener("click", () => { if(teacherMode) returnToStart(); });
+
+  ui.btnCheck.addEventListener("click", () => { if(game) checkCurrent(); });
+
+  ui.btnHint.addEventListener("click", () => {
+    if(!game) return;
+    const task = game.rooms[game.currentRoom].tasks[game.currentTask];
+    manualHint(task);
+  });
+
+  ui.btnShowAnswer.addEventListener("click", () => {
+    if(!teacherMode) return;
+    toggleAnswerReveal();
+  });
+
+  ui.btnNextTask.addEventListener("click", () => { if(game) advanceTaskOrRoom(); });
+
+  ui.btnNextRoom.addEventListener("click", () => {
+    if(!game) return;
+    const r = game.currentRoom;
+    const roomDone = game.rooms[r].solved.every(Boolean);
+    if(!roomDone){
+      ui.fb.className="feedback bad";
+      ui.fb.textContent="This room isn't fully solved yet.";
+      return;
+    }
+    if(r < 8){
+      game.currentRoom++;
+      game.currentTask = 0;
+      renderCurrent();
+    } else {
+      finishGame();
+    }
+  });
+
+  ui.btnBackToStart.addEventListener("click", () => returnToStart());
+
+  ui.btnBackToStart2.addEventListener("click", () => {
+    if(!finalTeacherGate()) return;
+    setScreen(ui.screenStart);
+  });
+
+  ui.btnRestartFromFinal.addEventListener("click", () => {
+    if(!finalTeacherGate()) return;
+    if(!game){ setScreen(ui.screenStart); return; }
+    hardRestart();
+  });
+
+  ui.answerInput.addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){
+      e.preventDefault();
+      ui.btnCheck.click();
+    }
+  });
+
+  $("#pasteBox").value = "";
+  ui.startMsg.textContent = "";
+  updateTopStats();
+  ui.helpBox.textContent = helpText;
+
+})();
+</script>
+</body>
+</html>
